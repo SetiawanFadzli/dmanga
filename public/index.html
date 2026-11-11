@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manga Downloader - Convert to JPG</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-background">
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo">
+        <i class="fa-solid fa-book-open-reader"></i>
+        <span>Manga<b>JPG</b> Downloader</span>
+      </div>
+      <p class="subtitle">Download chapter manga favoritmu langsung ke format <code>.jpg</code> resolusi tinggi</p>
+    </header>
+
+    <!-- Main Input Section -->
+    <section class="card search-card">
+      <form id="urlForm" class="search-form">
+        <div class="input-group">
+          <i class="fa-solid fa-link input-icon"></i>
+          <input 
+            type="url" 
+            id="urlInput" 
+            placeholder="Tempel link MangaDex, nhentai, atau MangaFire di sini..." 
+            required 
+            autocomplete="off"
+          />
+          <button type="button" id="pasteBtn" class="btn btn-secondary" title="Tempel dari Clipboard">
+            <i class="fa-regular fa-paste"></i>
+          </button>
+        </div>
+        <button type="submit" id="parseBtn" class="btn btn-primary">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <span>Proses Link</span>
+        </button>
+      </form>
+
+      <!-- Quick sample buttons -->
+      <div class="quick-sample">
+        <span>Contoh Link:</span>
+        <button type="button" class="sample-btn" data-url="https://mangadex.org/chapter/99711c0a-a689-485f-877e-f1efb397b77e/1">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> MangaDex
+        </button>
+        <button type="button" class="sample-btn" data-url="https://nhentai.net/g/670464/3/">
+          <i class="fa-solid fa-fire"></i> nhentai
+        </button>
+        <button type="button" class="sample-btn" data-url="https://mangafire.to/title/703y6-perfect-life-system-double-cash-for-her-favor/chapter/9345287">
+          <i class="fa-solid fa-bolt"></i> MangaFire
+        </button>
+      </div>
+    </section>
+
+    <!-- Batch Direct Image Input Helper for MangaFire & Custom Sources -->
+    <section id="batchImageSection" class="card batch-card hidden">
+      <div class="batch-header">
+        <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Generator Halaman MangaFire & Input Link</h4>
+        <p>Gunakan generator otomatis 1-Klik di bawah atau tempel URL gambar halaman (1 link per baris):</p>
+      </div>
+
+      <div class="generator-controls" style="display: flex; gap: 0.75rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap;">
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Jumlah Halaman:</span>
+        <input type="number" id="autoPageCount" value="25" min="1" max="100" style="width: 80px; padding: 0.5rem; background: rgba(15,23,42,0.8); border: 1px solid var(--border-color); border-radius: 6px; color: white; font-weight: bold;" />
+        <button type="button" id="autoGenerateBtn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+          <i class="fa-solid fa-bolt"></i> Auto-Generate (1-Klik)
+        </button>
+      </div>
+
+      <textarea id="batchImageInput" rows="4" placeholder="Atau tempel URL gambar kustom di sini (1 per baris)..."></textarea>
+      <button type="button" id="processBatchBtn" class="btn btn-primary">
+        <i class="fa-solid fa-check"></i> Proses & Tampilkan Preview JPG
+      </button>
+    </section>
+
+    <!-- Loading State -->
+    <div id="loadingSection" class="card loading-card hidden">
+      <div class="spinner"></div>
+      <p id="loadingText">Mengambil metadata chapter dari MangaDex...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorSection" class="alert alert-error hidden">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <span id="errorMessage"></span>
+    </div>
+
+    <!-- Chapter Info & Download Controls -->
+    <main id="resultSection" class="hidden">
+      <!-- Metadata Card -->
+      <section class="card meta-card">
+        <div class="meta-header">
+          <div class="meta-badge">
+            <span class="badge badge-tech"><i class="fa-solid fa-file-image"></i> High Quality .JPG</span>
+            <span class="badge badge-lang" id="badgeLang">EN</span>
+          </div>
+          <h2 id="chapterTitle" class="manga-title">Title Chapter Manga</h2>
+          <p id="chapterSub" class="manga-subtitle">Volume & Chapter Info</p>
+        </div>
+
+        <div class="meta-details">
+          <div class="meta-item">
+            <i class="fa-solid fa-layer-group"></i>
+            <div>
+              <small>Total Halaman</small>
+              <strong id="totalPages">0 Halaman</strong>
+            </div>
+          </div>
+          <div class="meta-item">
+            <i class="fa-solid fa-file-code"></i>
+            <div>
+              <small>Format Target</small>
+              <strong>JPEG (.jpg)</strong>
+            </div>
+          </div>
+          <div class="meta-item quality-selector">
+            <small>Kualitas Gambar</small>
+            <div class="toggle-group">
+              <button type="button" id="qualityOriginal" class="toggle-btn active">Original (HQ)</button>
+              <button type="button" id="qualitySaver" class="toggle-btn">Data Saver</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download Actions -->
+        <div class="action-grid">
+          <button id="downloadZipBtn" class="btn btn-action btn-zip">
+            <i class="fa-solid fa-file-zipper"></i>
+            <div class="btn-text">
+              <span>Download ZIP (.jpg)</span>
+              <small>Ekspor semua halaman dalam 1 file ZIP</small>
+            </div>
+          </button>
+
+          <button id="downloadFolderBtn" class="btn btn-action btn-folder">
+            <i class="fa-solid fa-folder-arrow-down"></i>
+            <div class="btn-text">
+              <span>Simpan ke Folder Lokal</span>
+              <small>Simpan langsung ke direktori penyimpanan</small>
+            </div>
+          </button>
+        </div>
+
+        <!-- Local Folder Custom Path Modal / Input -->
+        <div id="folderInputGroup" class="folder-input-group hidden">
+          <div class="input-group">
+            <i class="fa-solid fa-folder-open input-icon"></i>
+            <input type="text" id="customFolderPath" placeholder="Path Folder Kustom (Opsional, contoh: D:\Manga)" />
+            <button type="button" id="confirmFolderBtn" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Mulai Simpan
+            </button>
+          </div>
+          <small class="help-text">Jika dikosongkan, file akan disimpan ke folder <code>downloads/</code> aplikasi.</small>
+        </div>
+      </section>
+
+      <!-- Download Progress Bar Section -->
+      <section id="progressSection" class="card progress-card hidden">
+        <div class="progress-header">
+          <span id="progressStatusText"><i class="fa-solid fa-arrows-rotate fa-spin"></i> Mendownload & mengkonversi ke JPG...</span>
+          <span id="progressPercentText">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="progressBarFill" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+      </section>
+
+      <!-- Pages Gallery Preview -->
+      <section class="card gallery-card">
+        <div class="gallery-header">
+          <h3><i class="fa-solid fa-images"></i> Preview Halaman (<span id="pageCountSpan">0</span>)</h3>
+          <small class="badge badge-info">Semua gambar dikonversi otomatis ke .jpg</small>
+        </div>
+        <div id="pagesGrid" class="pages-grid">
+          <!-- Dynamically populated page cards -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

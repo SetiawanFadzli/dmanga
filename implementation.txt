@@ -1,0 +1,42 @@
+# Implementation Plan - MangaFire.to Support
+
+Adding support for downloading chapters from MangaFire.to links (e.g., https://mangafire.to/title/703y6-perfect-life-system-double-cash-for-her-favor/chapter/9345287), with automatic conversion of all page images strictly to .jpg format.
+
+## User Review Required
+
+- MangaFire uses client-side SPA rendering and WAF protection. The app will support both server-side AJAX parsing (with DoH & custom User-Agent/Referer headers) and Opera/Browser client-side fetch fallback so chapters can always be fetched reliably.
+- All extracted images (PNG/WEBP) will be converted to high-quality .jpg using sharp.
+
+## Proposed Changes
+
+### Backend (Node.js & Express)
+
+#### [MODIFY] server.js
+- Add MangaFire URL parser (extractUrlInfo):
+  - Recognize patterns: mangafire.to/title/{slug}/chapter/{id} and mangafire.to/read/{slug}.
+- Add MangaFire API & HTML scraper in /api/parse:
+  - Extract manga title, chapter number, and page image URLs.
+  - Return standardized chapter object for frontend gallery rendering.
+- Update /api/proxy-image and fetchAndConvertToJpg:
+  - Set Referer: https://mangafire.to/ for image CDN requests (s.mfcdn.nl, mangafire.to).
+
+### Frontend (HTML / CSS / JavaScript)
+
+#### [MODIFY] public/index.html
+- Add quick sample button for MangaFire (https://mangafire.to/title/703y6-perfect-life-system-double-cash-for-her-favor/chapter/9345287).
+- Update input placeholder to list MangaFire alongside MangaDex and nhentai.
+
+#### [MODIFY] public/app.js
+- Handle MangaFire link processing in urlForm submit.
+- Render thumbnail gallery and handle ZIP export & Folder download to .jpg.
+
+## Verification Plan
+
+### Automated Tests
+- Test parsing URL https://mangafire.to/title/703y6-perfect-life-system-double-cash-for-her-favor/chapter/9345287 via /api/parse.
+- Verify extracted title, chapter number, and page URLs.
+
+### Manual Verification
+- Access http://localhost:3000.
+- Input link https://mangafire.to/title/703y6-perfect-life-system-double-cash-for-her-favor/chapter/9345287.
+- Download ZIP and verify images are extracted in .jpg format.
